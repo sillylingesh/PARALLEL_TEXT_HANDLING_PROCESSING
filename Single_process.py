@@ -1,13 +1,11 @@
 # add_data.py
-# Advanced Sentiment Analysis with correct schema
+# Sequential Sentiment Analysis (No Parallel Processing)
 # Database: sen.db
 
 import sqlite3
-import concurrent.futures
-import threading
-import queue
 import re
 import os
+import time
 
 TEXT_FILE = "sample.txt"
 DB_FILE = "sen.db"
@@ -27,7 +25,6 @@ NEGATIVE_WORDS = {
 
 ALERT_WORDS = {"error", "fail", "failure", "danger", "critical", "warning"}
 
-# CORRECT SCHEMA
 CREATE_TABLE = """
 CREATE TABLE IF NOT EXISTS results (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,10 +51,8 @@ INSERT INTO results (
 """
 
 
-# Create new DB and schema
 def setup_database():
 
-    # Delete old DB to avoid schema mismatch
     if os.path.exists(DB_FILE):
         os.remove(DB_FILE)
         print("Old database removed.")
@@ -73,7 +68,6 @@ def setup_database():
     print("New database sen.db created.")
 
 
-# Read file
 def read_file():
 
     if not os.path.exists(TEXT_FILE):
@@ -84,7 +78,6 @@ def read_file():
         return f.read()
 
 
-# Split sentences
 def split_sentences(text):
 
     sentences = re.split(r'[.!?]+', text)
@@ -92,7 +85,6 @@ def split_sentences(text):
     return [s.strip() for s in sentences if s.strip()]
 
 
-# Sentiment calculation
 def analyze_sentence(sentence):
 
     words = re.findall(r'\b\w+\b', sentence.lower())
@@ -109,7 +101,6 @@ def analyze_sentence(sentence):
     else:
         sentiment = "NEUTRAL"
 
-    # Pattern detection
     if "?" in sentence:
         pattern = "QUESTION"
     elif any(w in ALERT_WORDS for w in words):
@@ -119,7 +110,6 @@ def analyze_sentence(sentence):
     else:
         pattern = "NORMAL"
 
-    # Tagging
     if pattern == "ALERT":
         tag = "CRITICAL"
     elif score >= 2:
@@ -130,7 +120,7 @@ def analyze_sentence(sentence):
         tag = "QUERY"
     else:
         tag = sentiment
-
+    time.sleep(0.001)
     return (
         sentence,
         sentiment,
@@ -142,33 +132,9 @@ def analyze_sentence(sentence):
     )
 
 
-# Database writer thread
-def db_writer(q):
-
-    conn = sqlite3.connect(DB_FILE, check_same_thread=False)
-
-    cursor = conn.cursor()
-
-    while True:
-
-        data = q.get()
-
-        if data is None:
-            break
-
-        try:
-            cursor.execute(INSERT_SQL, data)
-            conn.commit()
-        except Exception as e:
-            print("DB Error:", e)
-
-        q.task_done()
-
-    conn.close()
-
-
-# Main
 def main():
+
+    start_time = time.time()   # Start time
 
     setup_database()
 
@@ -181,27 +147,23 @@ def main():
 
     print("Processing", len(sentences), "sentences...")
 
-    write_queue = queue.Queue()
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
 
-    writer = threading.Thread(target=db_writer, args=(write_queue,))
-    writer.start()
+    # Sequential processing
+    for sentence in sentences:
 
-    # Thread pool
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1000) as executor:
+        result = analyze_sentence(sentence)
 
-        futures = [executor.submit(analyze_sentence, s) for s in sentences]
+        cursor.execute(INSERT_SQL, result)
 
-        for future in concurrent.futures.as_completed(futures):
+    conn.commit()
+    conn.close()
 
-            write_queue.put(future.result())
-
-    write_queue.join()
-
-    write_queue.put(None)
-
-    writer.join()
+    end_time = time.time()   # End time
 
     print("All data stored in sen.db")
+    print("Sequential Processing Time:", round(end_time - start_time, 4), "seconds")
 
 
 if __name__ == "__main__":

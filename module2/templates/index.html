@@ -1,0 +1,499 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* ─── Index Page Styles ──────────────────────────────────── */
+    .hero-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--accent-1);
+        background: var(--bg-glass);
+        border: 1px solid var(--border-accent);
+        padding: 0.35rem 1rem;
+        border-radius: 99px;
+        backdrop-filter: blur(8px);
+        margin-bottom: 1.5rem;
+        animation: slideDown 0.6s cubic-bezier(.22,1,.36,1) both;
+    }
+    .hero-eyebrow .dot-live {
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        background: var(--accent-3);
+        box-shadow: 0 0 8px var(--accent-3);
+        animation: livePulse 1.6s ease-in-out infinite;
+    }
+    @keyframes livePulse {
+        0%,100% { opacity:1; transform:scale(1); }
+        50% { opacity:.5; transform:scale(1.5); }
+    }
+    @keyframes slideDown {
+        from { opacity:0; transform:translateY(-12px); }
+        to   { opacity:1; transform:translateY(0); }
+    }
+
+    .hero-title {
+        font-family: var(--font-display);
+        font-size: clamp(2.4rem, 5vw, 4rem);
+        font-weight: 800;
+        line-height: 1.05;
+        letter-spacing: -1.5px;
+        color: var(--text-primary);
+        margin-bottom: 1.2rem;
+        animation: heroTitle 0.7s 0.1s cubic-bezier(.22,1,.36,1) both;
+    }
+    @keyframes heroTitle {
+        from { opacity:0; transform:translateY(20px); }
+        to   { opacity:1; transform:translateY(0); }
+    }
+
+    .hero-sub {
+        font-size: 1.05rem;
+        line-height: 1.7;
+        color: var(--text-secondary);
+        max-width: 520px;
+        margin: 0 auto 2.5rem;
+        animation: heroTitle 0.7s 0.2s cubic-bezier(.22,1,.36,1) both;
+    }
+
+    /* ─── Input Card ─────────────────────────────────────────── */
+    .input-card {
+        position: relative;
+        padding: 2.5rem;
+        margin-bottom: 2rem;
+        animation: heroTitle 0.7s 0.3s cubic-bezier(.22,1,.36,1) both;
+    }
+
+    .input-card::before {
+        content: '';
+        position: absolute;
+        inset: -1px;
+        border-radius: 21px;
+        padding: 1px;
+        background: linear-gradient(135deg, var(--accent-1), var(--accent-2), transparent 60%);
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
+    .input-label {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 0.8rem;
+    }
+
+    .textarea-wrap {
+        position: relative;
+    }
+
+    textarea {
+        width: 100%;
+        min-height: 140px;
+        padding: 1.1rem 1.3rem;
+        font-family: var(--font-body);
+        font-size: 1rem;
+        line-height: 1.7;
+        color: var(--text-primary);
+        background: var(--bg-glass);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        resize: vertical;
+        outline: none;
+        transition: all 0.25s;
+        caret-color: var(--accent-1);
+    }
+
+    textarea::placeholder { color: var(--text-muted); }
+
+    textarea:focus {
+        border-color: var(--accent-1);
+        box-shadow: 0 0 0 3px var(--glow-1), inset 0 1px 0 rgba(255,255,255,0.04);
+        background: var(--bg-card);
+    }
+
+    .char-count {
+        position: absolute;
+        bottom: 10px;
+        right: 14px;
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        pointer-events: none;
+        transition: color 0.2s;
+    }
+
+    .form-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 1.4rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .hint-text {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    /* ─── Submit Button ───────────────────────────────────────── */
+    .btn-analyze {
+        position: relative;
+        overflow: hidden;
+        padding: 0.75rem 2rem;
+    }
+    .btn-analyze::before {
+        content: '';
+        position: absolute;
+        top: 50%; left: 50%;
+        width: 0; height: 0;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.15);
+        transform: translate(-50%,-50%);
+        transition: width 0.5s, height 0.5s;
+    }
+    .btn-analyze:active::before {
+        width: 200px; height: 200px;
+    }
+
+    /* ─── Result Card ─────────────────────────────────────────── */
+    .result-card {
+        animation: resultReveal 0.6s cubic-bezier(.22,1,.36,1) both;
+    }
+    @keyframes resultReveal {
+        from { opacity:0; transform:translateY(24px) scale(0.98); }
+        to   { opacity:1; transform:translateY(0) scale(1); }
+    }
+
+    .result-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid var(--border);
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .result-header h3 {
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .result-header h3 .result-id {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 99px;
+        background: var(--bg-glass);
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    /* Sentiment Badges */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.45rem 1.1rem;
+        border-radius: 99px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+    }
+    .badge-pos {
+        background: rgba(52,211,153,0.12);
+        color: var(--accent-pos);
+        border: 1px solid rgba(52,211,153,0.3);
+        box-shadow: 0 0 20px rgba(52,211,153,0.1);
+    }
+    .badge-neg {
+        background: rgba(248,113,113,0.12);
+        color: var(--accent-neg);
+        border: 1px solid rgba(248,113,113,0.3);
+        box-shadow: 0 0 20px rgba(248,113,113,0.1);
+    }
+    .badge-neu {
+        background: var(--bg-glass);
+        color: var(--text-secondary);
+        border: 1px solid var(--border);
+    }
+
+    /* Stat Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 1rem;
+        padding: 1.75rem 2rem;
+    }
+
+    .stat-block {
+        border-radius: 14px;
+        padding: 1.2rem 1.4rem;
+        border: 1px solid var(--border);
+        background: var(--bg-glass);
+        transition: all 0.2s;
+        position: relative;
+        overflow: hidden;
+    }
+    .stat-block::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 2px;
+        border-radius: 99px;
+    }
+    .stat-block.score::after  { background: linear-gradient(90deg, var(--accent-1), var(--accent-2)); }
+    .stat-block.pos-w::after  { background: var(--accent-pos); }
+    .stat-block.neg-w::after  { background: var(--accent-neg); }
+    .stat-block.tag-w::after  { background: var(--accent-blue); }
+
+    .stat-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-bottom: 0.6rem;
+    }
+    .stat-value {
+        font-family: var(--font-display);
+        font-size: 2.4rem;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -1px;
+    }
+    .stat-value.grad { background: linear-gradient(135deg, var(--accent-1), var(--accent-2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .stat-value.green { color: var(--accent-pos); }
+    .stat-value.red   { color: var(--accent-neg); }
+    .stat-value.blue  { color: var(--accent-blue); font-size: 1.3rem; }
+
+    /* Sentence strip */
+    .sentence-strip {
+        margin: 0 2rem 2rem;
+        padding: 1.1rem 1.4rem;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--bg-glass);
+        font-size: 0.95rem;
+        line-height: 1.7;
+        color: var(--text-secondary);
+        font-style: italic;
+        border-left: 3px solid var(--accent-1);
+        position: relative;
+    }
+    .sentence-strip .s-label {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--accent-1);
+        font-style: normal;
+        display: block;
+        margin-bottom: 0.4rem;
+    }
+
+    /* Score progress bar */
+    .score-bar-wrap {
+        margin: 0 2rem 1.75rem;
+    }
+    .score-bar-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+    .score-bar-track {
+        height: 6px;
+        background: var(--border);
+        border-radius: 99px;
+        overflow: hidden;
+    }
+    .score-bar-fill {
+        height: 100%;
+        border-radius: 99px;
+        background: linear-gradient(90deg, var(--accent-1), var(--accent-2));
+        transition: width 1s cubic-bezier(.22,1,.36,1);
+        width: 0;
+    }
+
+    /* ─── Center hero layout ─────────────────────────────────── */
+    .hero-center { text-align: center; }
+
+    @media (max-width: 600px) {
+        .input-card { padding: 1.5rem; }
+        .stats-grid { grid-template-columns: 1fr 1fr; }
+        .hero-title  { font-size: 2rem; }
+    }
+</style>
+
+<div class="max-w-3xl mx-auto">
+    <!-- Hero -->
+    <div class="hero-center" style="margin-bottom: 2.5rem;">
+        <div style="display:flex;justify-content:center;margin-bottom:1rem;">
+            <div class="hero-eyebrow">
+                <span class="dot-live"></span>
+                Neural Tone Engine &nbsp;·&nbsp; v2.0
+            </div>
+        </div>
+        <h1 class="hero-title">
+            Decode the <span class="grad-text">Emotion</span><br>Inside Your Words
+        </h1>
+        <p class="hero-sub">
+            Paste any text and our sentiment engine scores it instantly — detecting positive, negative, and neutral signals at the word level.
+        </p>
+    </div>
+
+    <!-- Input Card -->
+    <div class="glass-card input-card">
+        <label class="input-label" for="text">
+            <i class="fa-solid fa-pen-nib" style="margin-right:5px;color:var(--accent-1)"></i>
+            Your Text
+        </label>
+        <form method="POST" action="/">
+            <div class="textarea-wrap">
+                <textarea id="text" name="text" 
+                    placeholder="e.g. 'The system is working brilliantly and performance is absolutely excellent.'"
+                    oninput="updateCount(this)"></textarea>
+                <span class="char-count" id="charCount">0 chars</span>
+            </div>
+
+            <div class="form-footer">
+                <span class="hint-text">
+                    <i class="fa-solid fa-circle-info" style="color:var(--accent-1)"></i>
+                    Tip: Longer sentences give richer scores
+                </span>
+                <button type="submit" class="btn-primary btn-analyze">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    Analyze Text
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ─── Results ─────────────────────────────────────────── -->
+    {% if result %}
+    <div class="glass-card result-card">
+        <!-- Header -->
+        <div class="result-header">
+            <h3>
+                Analysis Results
+                <span class="result-id">just now</span>
+            </h3>
+
+            {% if result.sentiment == 'POSITIVE' %}
+                <span class="badge badge-pos">
+                    <i class="fa-solid fa-face-smile"></i> POSITIVE
+                </span>
+            {% elif result.sentiment == 'NEGATIVE' %}
+                <span class="badge badge-neg">
+                    <i class="fa-solid fa-face-frown"></i> NEGATIVE
+                </span>
+            {% else %}
+                <span class="badge badge-neu">
+                    <i class="fa-solid fa-face-meh"></i> NEUTRAL
+                </span>
+            {% endif %}
+        </div>
+
+        <!-- Score Bar -->
+        <div class="score-bar-wrap" style="margin-top:1.5rem;">
+            <div class="score-bar-label">
+                <span>Sentiment Intensity</span>
+                <span style="color:var(--accent-1);font-weight:600">Score: {{ result.score }}</span>
+            </div>
+            <div class="score-bar-track">
+                <div class="score-bar-fill" id="scoreBar"
+                     data-score="{{ result.score }}"
+                     data-max="10">
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-block score">
+                <div class="stat-label">
+                    <i class="fa-solid fa-star" style="color:var(--accent-1)"></i>
+                    Overall Score
+                </div>
+                <div class="stat-value grad">{{ result.score }}</div>
+            </div>
+
+            <div class="stat-block pos-w">
+                <div class="stat-label">
+                    <i class="fa-solid fa-plus" style="color:var(--accent-pos)"></i>
+                    Positive Words
+                </div>
+                <div class="stat-value green">{{ result.pos_count }}</div>
+            </div>
+
+            <div class="stat-block neg-w">
+                <div class="stat-label">
+                    <i class="fa-solid fa-minus" style="color:var(--accent-neg)"></i>
+                    Negative Words
+                </div>
+                <div class="stat-value red">{{ result.neg_count }}</div>
+            </div>
+
+            <div class="stat-block tag-w">
+                <div class="stat-label">
+                    <i class="fa-solid fa-tag" style="color:var(--accent-blue)"></i>
+                    Tag Level
+                </div>
+                <div class="stat-value blue">{{ result.tag }}</div>
+            </div>
+        </div>
+
+        <!-- Sentence -->
+        <div class="sentence-strip">
+            <span class="s-label">Input Sentence</span>
+            "{{ result.sentence }}"
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    function updateCount(el) {
+        const n = el.value.length;
+        const el2 = document.getElementById('charCount');
+        el2.textContent = n + ' char' + (n !== 1 ? 's' : '');
+        el2.style.color = n > 400 ? 'var(--accent-neg)' : n > 200 ? 'var(--accent-2)' : 'var(--text-muted)';
+    }
+
+    // Animate score bar on load
+    document.addEventListener('DOMContentLoaded', () => {
+        const bar = document.getElementById('scoreBar');
+        if (!bar) return;
+        const score = parseFloat(bar.dataset.score) || 0;
+        const max   = parseFloat(bar.dataset.max) || 10;
+        const pct   = Math.min(100, Math.abs(score) / max * 100);
+        setTimeout(() => { bar.style.width = pct + '%'; }, 200);
+
+        // Color based on sentiment
+        if (score < 0) bar.style.background = 'linear-gradient(90deg, var(--accent-neg), #f43f5e)';
+    });
+</script>
+{% endblock %}

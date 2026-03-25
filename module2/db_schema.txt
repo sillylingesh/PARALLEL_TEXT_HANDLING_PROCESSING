@@ -1,0 +1,28 @@
+--- SCHEMA ---
+Table: results
+SQL: CREATE TABLE results (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sentence TEXT NOT NULL,
+    sentiment TEXT NOT NULL,
+    score INTEGER NOT NULL,
+    positive_count INTEGER NOT NULL,
+    negative_count INTEGER NOT NULL,
+    pattern TEXT NOT NULL,
+    tag TEXT NOT NULL
+)
+--------------------
+Table: sqlite_sequence
+SQL: CREATE TABLE sqlite_sequence(name,seq)
+--------------------
+
+--- DATA ---
+Table results data:
+(1, 'The system is working very well and the performance is excellent', 'POSITIVE', 1, 1, 0, 'NORMAL', 'POSITIVE')
+(2, 'Users are happy with the new update and they love the improved interface', 'POSITIVE', 2, 2, 0, 'LONG', 'VERY_POSITIVE')
+(3, 'The experience is amazing and the response time is fantastic', 'POSITIVE', 2, 2, 0, 'NORMAL', 'VERY_POSITIVE')
+(4, 'However, some users reported a problem while logging in to the application', 'NEGATIVE', -1, 0, 1, 'NORMAL', 'NEGATIVE')
+(5, 'The error caused frustration and the experience was bad for those users', 'NEGATIVE', -2, 0, 2, 'ALERT', 'CRITICAL')
+========================================
+Table sqlite_sequence data:
+('results', 721)
+========================================

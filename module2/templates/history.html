@@ -1,0 +1,476 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* ─── History Page Styles ───────────────────────────────── */
+    .page-header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        margin-bottom: 2.2rem;
+        flex-wrap: wrap;
+        gap: 1.2rem;
+        animation: heroTitle 0.6s cubic-bezier(.22,1,.36,1) both;
+    }
+    @keyframes heroTitle {
+        from { opacity:0; transform:translateY(16px); }
+        to   { opacity:1; transform:translateY(0); }
+    }
+
+    .page-header-left {}
+
+    .page-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--accent-2);
+        margin-bottom: 0.5rem;
+    }
+
+    .page-title {
+        font-family: var(--font-display);
+        font-size: clamp(1.8rem, 3vw, 2.6rem);
+        font-weight: 800;
+        letter-spacing: -1px;
+        color: var(--text-primary);
+        line-height: 1.1;
+    }
+
+    .page-subtitle {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        margin-top: 0.4rem;
+    }
+
+    /* ─── Stats Strip ─────────────────────────────────────── */
+    .stats-strip {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.8rem;
+        flex-wrap: wrap;
+        animation: heroTitle 0.6s 0.1s cubic-bezier(.22,1,.36,1) both;
+    }
+
+    .strip-stat {
+        flex: 1;
+        min-width: 120px;
+        padding: 1rem 1.3rem;
+        border-radius: 14px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        backdrop-filter: blur(10px);
+        transition: all 0.2s;
+    }
+    .strip-stat:hover {
+        border-color: var(--border-accent);
+        transform: translateY(-2px);
+    }
+    .strip-stat-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+    .strip-stat-value {
+        font-family: var(--font-display);
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        letter-spacing: -0.5px;
+    }
+    .strip-stat-value.green { color: var(--accent-pos); }
+    .strip-stat-value.red   { color: var(--accent-neg); }
+    .strip-stat-value.violet { background: linear-gradient(135deg, var(--accent-1), var(--accent-2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+
+    /* ─── Table Card ──────────────────────────────────────── */
+    .table-card {
+        animation: heroTitle 0.6s 0.15s cubic-bezier(.22,1,.36,1) both;
+        overflow: hidden;
+    }
+
+    /* Search / Filter bar */
+    .table-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.2rem 1.75rem;
+        border-bottom: 1px solid var(--border);
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .search-wrap {
+        position: relative;
+        flex: 1;
+        min-width: 200px;
+        max-width: 360px;
+    }
+    .search-wrap i {
+        position: absolute;
+        left: 12px; top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        pointer-events: none;
+    }
+    .search-input {
+        width: 100%;
+        padding: 0.55rem 1rem 0.55rem 2.2rem;
+        background: var(--bg-glass);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: var(--text-primary);
+        font-family: var(--font-body);
+        font-size: 0.875rem;
+        outline: none;
+        transition: all 0.2s;
+    }
+    .search-input::placeholder { color: var(--text-muted); }
+    .search-input:focus {
+        border-color: var(--accent-1);
+        box-shadow: 0 0 0 3px var(--glow-1);
+    }
+
+    .row-count {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        white-space: nowrap;
+    }
+    .row-count strong { color: var(--text-primary); }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    thead tr {
+        border-bottom: 1px solid var(--border);
+    }
+
+    th {
+        padding: 0.85rem 1.4rem;
+        text-align: left;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        white-space: nowrap;
+        background: var(--bg-glass);
+    }
+    th.center { text-align: center; }
+
+    tbody tr {
+        border-bottom: 1px solid var(--border);
+        transition: background 0.15s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--bg-glass); }
+
+    td {
+        padding: 1rem 1.4rem;
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        vertical-align: middle;
+    }
+    td.center { text-align: center; }
+
+    /* ID cell */
+    .id-cell {
+        font-family: var(--font-display);
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        letter-spacing: 0.05em;
+    }
+
+    /* Sentence cell */
+    .sentence-cell {
+        color: var(--text-primary);
+        max-width: 320px;
+    }
+    .sentence-inner {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        line-height: 1.5;
+    }
+
+    /* Badges */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.3rem 0.85rem;
+        border-radius: 99px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        white-space: nowrap;
+    }
+    .badge-pos {
+        background: rgba(52,211,153,0.12);
+        color: var(--accent-pos);
+        border: 1px solid rgba(52,211,153,0.25);
+    }
+    .badge-neg {
+        background: rgba(248,113,113,0.12);
+        color: var(--accent-neg);
+        border: 1px solid rgba(248,113,113,0.25);
+    }
+    .badge-neu {
+        background: var(--bg-glass);
+        color: var(--text-muted);
+        border: 1px solid var(--border);
+    }
+
+    /* Score cell */
+    .score-cell {
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 1rem;
+        background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    .score-cell.negative {
+        background: none;
+        -webkit-text-fill-color: var(--accent-neg);
+    }
+
+    /* Word counts */
+    .words-cell {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+    .w-pos { color: var(--accent-pos); }
+    .w-sep { color: var(--border); }
+    .w-neg { color: var(--accent-neg); }
+
+    /* Tag pill */
+    .tag-pill {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 6px;
+        background: var(--tag-bg);
+        border: 1px solid var(--tag-border);
+        color: var(--tag-text);
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+    }
+
+    /* Empty state */
+    .empty-state {
+        padding: 4rem 2rem;
+        text-align: center;
+    }
+    .empty-icon {
+        font-size: 3rem;
+        background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 1rem;
+        opacity: 0.4;
+    }
+    .empty-title {
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        color: var(--text-secondary);
+        font-weight: 700;
+        margin-bottom: 0.4rem;
+    }
+    .empty-sub {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+
+    /* Row stagger animation */
+    tbody tr {
+        animation: rowIn 0.4s cubic-bezier(.22,1,.36,1) both;
+    }
+    {% for i in range(50) %}
+    tbody tr:nth-child({{ i + 1 }}) { animation-delay: {{ i * 0.03 }}s; }
+    {% endfor %}
+    @keyframes rowIn {
+        from { opacity:0; transform:translateX(-8px); }
+        to   { opacity:1; transform:translateX(0); }
+    }
+
+    @media (max-width:640px) {
+        th, td { padding: 0.8rem 1rem; }
+        .stats-strip { flex-direction: column; }
+    }
+</style>
+
+<div class="max-w-6xl mx-auto">
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="page-header-left">
+            <div class="page-eyebrow">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                Operations Log
+            </div>
+            <h1 class="page-title">Analysis <span class="grad-text">History</span></h1>
+            <p class="page-subtitle">All previously processed sentiment operations</p>
+        </div>
+        <a href="/" class="btn-secondary">
+            <i class="fa-solid fa-plus"></i>
+            New Analysis
+        </a>
+    </div>
+
+    <!-- Stats Strip -->
+    {% if rows %}
+    <div class="stats-strip" id="statsStrip">
+        <div class="strip-stat">
+            <span class="strip-stat-label">Total Analyses</span>
+            <span class="strip-stat-value violet" id="totalCount">{{ rows|length }}</span>
+        </div>
+        <div class="strip-stat">
+            <span class="strip-stat-label">Positive Results</span>
+            <span class="strip-stat-value green" id="posCount">
+                {{ rows | selectattr('sentiment', 'equalto', 'POSITIVE') | list | length }}
+            </span>
+        </div>
+        <div class="strip-stat">
+            <span class="strip-stat-label">Negative Results</span>
+            <span class="strip-stat-value red" id="negCount">
+                {{ rows | selectattr('sentiment', 'equalto', 'NEGATIVE') | list | length }}
+            </span>
+        </div>
+        <div class="strip-stat">
+            <span class="strip-stat-label">Neutral Results</span>
+            <span class="strip-stat-value" id="neuCount">
+                {{ rows | selectattr('sentiment', 'equalto', 'NEUTRAL') | list | length }}
+            </span>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Table Card -->
+    <div class="glass-card table-card">
+
+        <!-- Toolbar -->
+        <div class="table-toolbar">
+            <div class="search-wrap">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" class="search-input" id="searchInput"
+                       placeholder="Filter by sentence or tag…"
+                       oninput="filterTable()">
+            </div>
+            <span class="row-count" id="rowCount">
+                <strong>{{ rows|length }}</strong> records
+            </span>
+        </div>
+
+        <!-- Table -->
+        <div class="table-wrap">
+            <table id="historyTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Sentence</th>
+                        <th>Sentiment</th>
+                        <th class="center">Score</th>
+                        <th class="center">Words +/−</th>
+                        <th class="center">Tag</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    {% for row in rows %}
+                    <tr data-sentence="{{ row['sentence']|lower }}" data-tag="{{ row['tag']|lower }}">
+                        <td><span class="id-cell">#{{ row['id'] }}</span></td>
+
+                        <td class="sentence-cell">
+                            <div class="sentence-inner" title="{{ row['sentence'] }}">
+                                {{ row['sentence'] }}
+                            </div>
+                        </td>
+
+                        <td>
+                            {% if row['sentiment'] == 'POSITIVE' %}
+                                <span class="badge badge-pos">
+                                    <i class="fa-solid fa-face-smile"></i> Positive
+                                </span>
+                            {% elif row['sentiment'] == 'NEGATIVE' %}
+                                <span class="badge badge-neg">
+                                    <i class="fa-solid fa-face-frown"></i> Negative
+                                </span>
+                            {% else %}
+                                <span class="badge badge-neu">
+                                    <i class="fa-solid fa-face-meh"></i> Neutral
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td class="center">
+                            <span class="score-cell {% if row['score'] < 0 %}negative{% endif %}">
+                                {{ row['score'] }}
+                            </span>
+                        </td>
+
+                        <td class="center">
+                            <div class="words-cell">
+                                <span class="w-pos">+{{ row['positive_count'] }}</span>
+                                <span class="w-sep">|</span>
+                                <span class="w-neg">−{{ row['negative_count'] }}</span>
+                            </div>
+                        </td>
+
+                        <td class="center">
+                            <span class="tag-pill">{{ row['tag'] }}</span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="fa-solid fa-database"></i>
+                                </div>
+                                <div class="empty-title">No history yet</div>
+                                <p class="empty-sub">Run your first analysis and results will appear here.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function filterTable() {
+        const q = document.getElementById('searchInput').value.toLowerCase();
+        const rows = document.querySelectorAll('#tableBody tr[data-sentence]');
+        let visible = 0;
+        rows.forEach(row => {
+            const match = row.dataset.sentence.includes(q) || row.dataset.tag.includes(q);
+            row.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+        const rc = document.getElementById('rowCount');
+        if (rc) rc.innerHTML = `<strong>${visible}</strong> records`;
+    }
+</script>
+{% endblock %}

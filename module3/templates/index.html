@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⚡ Parallel Text Processor</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     HEADER
+     ═══════════════════════════════════════════════════════════ -->
+<header class="header">
+  <div class="header-logo">
+    <span class="bolt">⚡</span>
+    <h1>Parallel Text Processor</h1>
+  </div>
+  <span class="header-sub">Multi-Threaded · SQLite3 · Sentiment Analysis · Live Charts</span>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════════
+     APP SHELL
+     ═══════════════════════════════════════════════════════════ -->
+<div class="app-shell">
+
+  <!-- ── Sidebar tabs ─────────────────────────────────────── -->
+  <nav class="sidebar">
+    <button class="tab-btn active" data-tab="tab-input">
+      <span class="tab-icon">📂</span>
+      <span class="tab-label">Input</span>
+    </button>
+    <button class="tab-btn" data-tab="tab-results">
+      <span class="tab-icon">📊</span>
+      <span class="tab-label">Results</span>
+    </button>
+    <button class="tab-btn" data-tab="tab-search">
+      <span class="tab-icon">🔍</span>
+      <span class="tab-label">Search</span>
+    </button>
+    <button class="tab-btn" data-tab="tab-visual">
+      <span class="tab-icon">📈</span>
+      <span class="tab-label">Charts</span>
+    </button>
+    <button class="tab-btn" data-tab="tab-export">
+      <span class="tab-icon">💾</span>
+      <span class="tab-label">Export</span>
+    </button>
+  </nav>
+
+  <!-- ── Main content ────────────────────────────────────── -->
+  <div class="main-content">
+
+    <!-- ══════════════════════════════════════════════════════
+         TAB 1 — INPUT & PROCESS
+         ══════════════════════════════════════════════════════ -->
+    <div class="tab-panel active" id="tab-input">
+      <div class="input-layout">
+
+        <!-- Left: Text area -->
+        <div class="card">
+          <div class="card-title">📄 Input Text</div>
+          <p style="font-size:.78rem;color:var(--muted);margin-bottom:12px">
+            Paste text or load a .txt file — each sentence or paragraph becomes one chunk
+          </p>
+          <textarea
+            id="text-input"
+            placeholder="Paste your text here or click 'Load File'…&#10;&#10;The analysis will split it into chunks and score each one for positive, negative, or neutral sentiment."
+            style="flex:1;min-height:0"
+          ></textarea>
+          <div style="display:flex; flex-direction:column; gap:16px; margin-top:16px;">
+            <div style="display:flex; gap:12px; align-items:center;">
+              <button class="btn btn-primary" id="btn-load-file">📁 Load Files</button>
+              <button class="btn btn-ghost" id="btn-clear-text">🗑 Clear</button>
+              <span id="char-count" style="margin-left:auto; font-family:'DM Mono',monospace; font-size:.75rem; color:var(--muted)">0 characters</span>
+            </div>
+            <input type="file" id="file-input" accept=".txt,.pdf,.docx,.csv,.xlsx" multiple style="display:none">
+            <ul id="file-list" class="file-list"></ul>
+          </div>
+        </div>
+
+        <!-- Right: Options + Progress + Log -->
+        <div class="card" style="display:flex;flex-direction:column;gap:18px">
+
+          <!-- Options -->
+          <div>
+            <div class="card-title">⚙ Options</div>
+
+            <label class="form-label" style="margin-top:4px">Worker Threads</label>
+            <div class="radio-group">
+              {% for n in [2,4,8,16] %}
+              <label class="radio-pill">
+                <input type="radio" name="workers" value="{{ n }}" {% if n==4 %}checked{% endif %}>
+                <span>{{ n }}</span>
+              </label>
+              {% endfor %}
+            </div>
+
+            <label class="form-label" style="margin-top:14px">Chunk Method</label>
+            <div class="radio-group">
+              <label class="radio-pill">
+                <input type="radio" name="method" value="sentence" checked>
+                <span>Sentence</span>
+              </label>
+              <label class="radio-pill">
+                <input type="radio" name="method" value="paragraph">
+                <span>Paragraph</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Progress -->
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <span class="form-label" style="margin:0">Progress</span>
+              <div class="status-badge ready" id="status-badge">
+                <div class="status-dot"></div>
+                <span class="status-label">Ready</span>
+              </div>
+            </div>
+            <div class="progress-wrap">
+              <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-family:'DM Mono',monospace; font-size:.72rem; color:var(--muted); margin-top:6px">
+              <span id="progress-text">0 / 0 chunks</span>
+              <span id="timer-text">0.0s</span>
+            </div>
+          </div>
+
+          <!-- Log -->
+          <div style="flex:1;display:flex;flex-direction:column;gap:6px;min-height:0">
+            <span class="form-label">Live Log</span>
+            <div class="log-box" id="log-box" style="flex:1;min-height:120px"></div>
+          </div>
+
+          <!-- Action buttons -->
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn btn-success btn-lg" id="btn-start">▶ START PROCESSING</button>
+            <button class="btn btn-danger" id="btn-stop">⏹ Stop</button>
+          </div>
+
+        </div><!-- /right card -->
+      </div><!-- /input-layout -->
+    </div><!-- /tab-input -->
+
+
+    <!-- ══════════════════════════════════════════════════════
+         TAB 2 — RESULTS
+         ══════════════════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab-results">
+
+      <!-- Stat cards -->
+      <div class="stat-row">
+        <div class="stat-card accent-main">
+          <span class="stat-label">Total Chunks</span>
+          <span class="stat-value" id="stat-total">—</span>
+        </div>
+        <div class="stat-card" style="--c:var(--accent)">
+          <span class="stat-label">Avg Score</span>
+          <span class="stat-value" id="stat-avg" style="color:var(--accent)">—</span>
+        </div>
+        <div class="stat-card accent-pos">
+          <span class="stat-label">Positive Words</span>
+          <span class="stat-value" id="stat-pos">—</span>
+        </div>
+        <div class="stat-card accent-neg">
+          <span class="stat-label">Negative Words</span>
+          <span class="stat-value" id="stat-neg">—</span>
+        </div>
+        <div class="stat-card accent-neu">
+          <span class="stat-label">Neutral Words</span>
+          <span class="stat-value" id="stat-neu">—</span>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn btn-primary" id="btn-refresh-results">🔄 Refresh</button>
+        <button class="btn btn-danger" id="btn-clear-db">🗑 Clear Database</button>
+        <span id="results-count" style="margin-left:auto;font-family:'DM Mono',monospace;font-size:.78rem;color:var(--muted)"></span>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <table id="results-table">
+          <thead>
+            <tr>
+              <th style="width:50px">ID</th>
+              <th>Chunk Preview</th>
+              <th style="width:70px">Score</th>
+              <th style="width:100px">Sentiment</th>
+              <th style="width:70px">+Words</th>
+              <th style="width:70px">−Words</th>
+              <th style="width:70px">NWords</th>
+              <th style="width:70px">WCount</th>
+              <th style="width:150px">Timestamp</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+    </div><!-- /tab-results -->
+
+
+    <!-- ══════════════════════════════════════════════════════
+         TAB 3 — SEARCH & FILTER
+         ══════════════════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab-search">
+
+      <!-- Filter panel -->
+      <div class="card">
+        <div class="card-title">🔍 Search & Filter</div>
+        <div class="filter-row">
+          <div class="form-group wide">
+            <label class="form-label">Keyword</label>
+            <input type="text" id="search-keyword" placeholder="Search chunk text…">
+          </div>
+          <div class="form-group narrow">
+            <label class="form-label">Min Score</label>
+            <input type="number" id="search-min" placeholder="-10">
+          </div>
+          <div class="form-group narrow">
+            <label class="form-label">Max Score</label>
+            <input type="number" id="search-max" placeholder="10">
+          </div>
+          <div class="form-group narrow">
+            <label class="form-label">Sentiment</label>
+            <select id="search-label">
+              <option value="All">All</option>
+              <option value="Positive">Positive</option>
+              <option value="Negative">Negative</option>
+              <option value="Neutral">Neutral</option>
+            </select>
+          </div>
+          <div class="form-group" style="justify-content:flex-end;flex-direction:row;gap:8px;align-items:flex-end">
+            <button class="btn btn-primary" id="btn-search">🔍 Search</button>
+            <button class="btn btn-ghost" id="btn-reset-search">↺ Reset</button>
+          </div>
+        </div>
+        <p id="search-count" style="margin-top:10px;font-family:'DM Mono',monospace;font-size:.75rem;color:var(--muted)"></p>
+      </div>
+
+      <!-- Search results table -->
+      <div class="table-wrap">
+        <table id="search-table">
+          <thead>
+            <tr>
+              <th style="width:50px">ID</th>
+              <th>Chunk Preview</th>
+              <th style="width:70px">Score</th>
+              <th style="width:100px">Sentiment</th>
+              <th style="width:70px">+Words</th>
+              <th style="width:70px">−Words</th>
+              <th style="width:70px">WCount</th>
+              <th style="width:150px">Timestamp</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="8">
+              <div class="empty-state">
+                <div class="icon">🔍</div>
+                <p>Enter a search query above to find chunks.</p>
+              </div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div><!-- /tab-search -->
+
+
+    <!-- ══════════════════════════════════════════════════════
+         TAB 4 — VISUALIZE
+         ══════════════════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab-visual">
+
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-weight:700;font-size:1rem;color:var(--accent)">📈 Sentiment Visualization</span>
+        <button class="btn btn-primary" id="btn-refresh-charts" style="margin-left:auto">🔄 Refresh Charts</button>
+      </div>
+
+      <div id="chart-empty" style="display:none;text-align:center;padding:60px;color:var(--muted)">
+        <div style="font-size:2.5rem;margin-bottom:12px">📊</div>
+        <p>No data yet — process some text to see charts.</p>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="card-title">Chunk Sentiment Count</div>
+          <canvas id="chart-bar" height="220"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="card-title">Word Distribution</div>
+          <canvas id="chart-doughnut" height="220"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="card-title">Score Distribution (Histogram)</div>
+          <canvas id="chart-hist" height="220"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="card-title">Average Sentiment Score</div>
+          <canvas id="chart-gauge" height="220"></canvas>
+        </div>
+      </div>
+
+    </div><!-- /tab-visual -->
+
+
+    <!-- ══════════════════════════════════════════════════════
+         TAB 5 — EXPORT
+         ══════════════════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab-export">
+      <div class="export-layout">
+
+        <!-- Options card -->
+        <div class="card">
+          <div class="card-title">💾 Export to CSV</div>
+          <p style="font-size:.8rem;color:var(--muted);margin-bottom:20px">Select a filter then download.</p>
+
+          <label class="form-label">Export Filter</label>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px">
+            {% for opt in ['All Results','Positive Only','Negative Only','Neutral Only'] %}
+            <label class="radio-pill">
+              <input type="radio" name="exp-filter" value="{{ opt }}" {% if opt=='All Results' %}checked{% endif %}>
+              <span style="width:140px">{{ opt }}</span>
+            </label>
+            {% endfor %}
+          </div>
+
+          <button class="btn btn-success btn-lg" id="btn-export" style="width:100%">📥 Export CSV</button>
+          <p id="export-status" style="margin-top:12px;font-size:.8rem;font-weight:600"></p>
+        </div>
+
+        <!-- Preview card -->
+        <div class="card">
+          <div class="card-title">📄 CSV Preview</div>
+          <pre class="preview-box" id="export-preview">— no export yet —</pre>
+        </div>
+
+      </div>
+    </div><!-- /tab-export -->
+
+  </div><!-- /main-content -->
+</div><!-- /app-shell -->
+
+<!-- ─── Toast container ────────────────────────────────────── -->
+<div id="toast-container"></div>
+
+<!-- ─── Scripts ────────────────────────────────────────────── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+</body>
+</html>

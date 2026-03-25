@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentimentX — Neural Tone Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* ─── CSS Variables / Themes ─────────────────────────── */
+        :root {
+            --font-display: 'Syne', sans-serif;
+            --font-body: 'DM Sans', sans-serif;
+            --transition: 0.35s cubic-bezier(.4,0,.2,1);
+        }
+
+        [data-theme="dark"] {
+            --bg-root:      #070711;
+            --bg-surface:   #0e0e1c;
+            --bg-card:      rgba(18,18,35,0.75);
+            --bg-card-hover:rgba(24,24,46,0.85);
+            --bg-glass:     rgba(255,255,255,0.04);
+            --border:       rgba(255,255,255,0.08);
+            --border-accent:rgba(139,92,246,0.4);
+            --text-primary: #f0f0ff;
+            --text-secondary:#a0a0c8;
+            --text-muted:   #5a5a80;
+            --accent-1:     #818cf8;
+            --accent-2:     #c084fc;
+            --accent-3:     #34d399;
+            --accent-neg:   #f87171;
+            --accent-pos:   #34d399;
+            --accent-blue:  #60a5fa;
+            --glow-1:       rgba(129,140,248,0.15);
+            --glow-2:       rgba(192,132,252,0.12);
+            --nav-bg:       rgba(7,7,17,0.8);
+            --nav-border:   rgba(255,255,255,0.06);
+            --scrollbar-bg: #0e0e1c;
+            --scrollbar-thumb:#2a2a50;
+            --tag-bg:       rgba(255,255,255,0.06);
+            --tag-border:   rgba(255,255,255,0.1);
+            --tag-text:     #a0a0c8;
+            --orb-1: radial-gradient(circle, rgba(129,140,248,0.18) 0%, transparent 70%);
+            --orb-2: radial-gradient(circle, rgba(192,132,252,0.14) 0%, transparent 70%);
+            --orb-3: radial-gradient(circle, rgba(52,211,153,0.10) 0%, transparent 70%);
+        }
+
+        [data-theme="light"] {
+            --bg-root:      #f4f4ff;
+            --bg-surface:   #eeeeff;
+            --bg-card:      rgba(255,255,255,0.82);
+            --bg-card-hover:rgba(255,255,255,0.95);
+            --bg-glass:     rgba(255,255,255,0.6);
+            --border:       rgba(100,80,200,0.1);
+            --border-accent:rgba(139,92,246,0.35);
+            --text-primary: #12122e;
+            --text-secondary:#4a4a80;
+            --text-muted:   #9090b8;
+            --accent-1:     #6366f1;
+            --accent-2:     #a855f7;
+            --accent-3:     #10b981;
+            --accent-neg:   #ef4444;
+            --accent-pos:   #10b981;
+            --accent-blue:  #3b82f6;
+            --glow-1:       rgba(99,102,241,0.10);
+            --glow-2:       rgba(168,85,247,0.09);
+            --nav-bg:       rgba(244,244,255,0.82);
+            --nav-border:   rgba(100,80,200,0.12);
+            --scrollbar-bg: #eeeeff;
+            --scrollbar-thumb:#c4c4e0;
+            --tag-bg:       rgba(99,102,241,0.07);
+            --tag-border:   rgba(99,102,241,0.18);
+            --tag-text:     #5a5a90;
+            --orb-1: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+            --orb-2: radial-gradient(circle, rgba(168,85,247,0.10) 0%, transparent 70%);
+            --orb-3: radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 70%);
+        }
+
+        /* ─── Reset / Base ───────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-root);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color var(--transition), color var(--transition);
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--scrollbar-bg); }
+        ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 99px; }
+
+        /* ─── Animated Background ────────────────────────────── */
+        .bg-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(70px);
+            animation: orbFloat 18s ease-in-out infinite;
+        }
+        .orb-1 {
+            width: 620px; height: 620px;
+            background: var(--orb-1);
+            top: -15%; left: -10%;
+            animation-duration: 20s;
+        }
+        .orb-2 {
+            width: 500px; height: 500px;
+            background: var(--orb-2);
+            bottom: 10%; right: -8%;
+            animation-duration: 25s;
+            animation-delay: -8s;
+        }
+        .orb-3 {
+            width: 380px; height: 380px;
+            background: var(--orb-3);
+            top: 50%; left: 55%;
+            animation-duration: 16s;
+            animation-delay: -4s;
+        }
+
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33%       { transform: translate(40px, -30px) scale(1.06); }
+            66%       { transform: translate(-25px, 20px) scale(0.96); }
+        }
+
+        /* Noise overlay (dark only) */
+        [data-theme="dark"] .bg-canvas::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+            opacity: 0.4;
+        }
+
+        /* Grid lines (dark only) */
+        [data-theme="dark"] .grid-lines {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(129,140,248,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(129,140,248,0.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        [data-theme="light"] .grid-lines {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(99,102,241,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99,102,241,0.05) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        /* ─── Navigation ─────────────────────────────────────── */
+        .navbar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            background: var(--nav-bg);
+            border-bottom: 1px solid var(--nav-border);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            transition: background var(--transition), border-color var(--transition);
+        }
+
+        .navbar-inner {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            height: 66px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            text-decoration: none;
+        }
+
+        .brand-icon {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            font-size: 0.95rem;
+            color: #fff;
+            box-shadow: 0 4px 15px var(--glow-1);
+        }
+
+        .brand-name {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+            transition: color var(--transition);
+        }
+
+        .brand-name span {
+            background: linear-gradient(90deg, var(--accent-1), var(--accent-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .nav-link {
+            font-family: var(--font-body);
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 0.45rem 1rem;
+            border-radius: 8px;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--accent-1);
+            background: var(--bg-glass);
+            border-color: var(--border-accent);
+        }
+
+        /* Theme Toggle */
+        .theme-btn {
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg-glass);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            backdrop-filter: blur(8px);
+        }
+
+        .theme-btn:hover {
+            border-color: var(--border-accent);
+            color: var(--accent-2);
+            background: var(--bg-card);
+        }
+
+        /* ─── Layout ─────────────────────────────────────────── */
+        .main-content {
+            flex: 1;
+            position: relative;
+            z-index: 1;
+            padding: 6.5rem 2rem 5rem;
+            max-width: 1280px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* ─── Footer ─────────────────────────────────────────── */
+        footer {
+            position: relative;
+            z-index: 1;
+            border-top: 1px solid var(--border);
+            padding: 1.5rem 2rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: var(--nav-bg);
+            backdrop-filter: blur(12px);
+            transition: all var(--transition);
+        }
+
+        footer .footer-inner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        footer .dot {
+            display: inline-block;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50%       { transform: scale(1.4); opacity: 0.7; }
+        }
+
+        /* ─── Glass Card ─────────────────────────────────────── */
+        .glass-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            backdrop-filter: blur(18px) saturate(160%);
+            -webkit-backdrop-filter: blur(18px) saturate(160%);
+            transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
+            box-shadow: 0 4px 40px rgba(0,0,0,0.15);
+        }
+
+        .glass-card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-accent);
+            box-shadow: 0 8px 60px rgba(0,0,0,0.2), 0 0 0 1px var(--border-accent);
+        }
+
+        /* ─── Gradient Text ───────────────────────────────────── */
+        .grad-text {
+            background: linear-gradient(135deg, var(--accent-1) 0%, var(--accent-2) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ─── Shared Utilities ───────────────────────────────── */
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.7rem 1.8rem;
+            border-radius: 99px;
+            border: none;
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+            color: #fff;
+            font-family: var(--font-body);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.25s;
+            box-shadow: 0 4px 20px var(--glow-1);
+            text-decoration: none;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px var(--glow-2);
+            filter: brightness(1.08);
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.4rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-accent);
+            background: var(--bg-glass);
+            color: var(--accent-1);
+            font-family: var(--font-body);
+            font-weight: 500;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            backdrop-filter: blur(8px);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-card);
+            transform: translateY(-1px);
+        }
+
+        /* ─── Page Enter Animation ────────────────────────────── */
+        @keyframes pageIn {
+            from { opacity: 0; transform: translateY(18px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .page-enter {
+            animation: pageIn 0.55s cubic-bezier(.22,1,.36,1) forwards;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-12px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Animated Background -->
+    <div class="bg-canvas" aria-hidden="true">
+        <div class="grid-lines"></div>
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-inner">
+            <a href="/" class="brand">
+                <div class="brand-icon"><i class="fa-solid fa-brain"></i></div>
+                <span class="brand-name">Sentiment<span>X</span></span>
+            </a>
+
+            <div class="nav-links">
+                <a href="/" class="nav-link" id="nav-analyze">
+                    <i class="fa-solid fa-wand-magic-sparkles" style="margin-right:5px;font-size:0.8rem"></i>Analyze
+                </a>
+                <a href="/history" class="nav-link" id="nav-history">
+                    <i class="fa-solid fa-clock-rotate-left" style="margin-right:5px;font-size:0.8rem"></i>History
+                </a>
+                <button class="theme-btn" id="themeToggle" aria-label="Toggle theme" title="Switch theme">
+                    <i class="fa-solid fa-moon" id="themeIcon"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Content -->
+    <main class="main-content page-enter">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-inner">
+            <span class="dot"></span>
+            <span>&copy; 2026 SentimentX Neural Tone Engine &mdash; All systems operational</span>
+        </div>
+    </footer>
+
+    <script>
+        // ─── Theme Switcher ───────────────────────────────────────
+        const html = document.documentElement;
+        const btn  = document.getElementById('themeToggle');
+        const icon = document.getElementById('themeIcon');
+
+        const saved = localStorage.getItem('sx-theme') || 'dark';
+        applyTheme(saved);
+
+        btn.addEventListener('click', () => {
+            const next = html.dataset.theme === 'dark' ? 'light' : 'dark';
+            applyTheme(next);
+            localStorage.setItem('sx-theme', next);
+        });
+
+        function applyTheme(t) {
+            html.dataset.theme = t;
+            icon.className = t === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        }
+
+        // ─── Active Nav Link ──────────────────────────────────────
+        const path = window.location.pathname;
+        if (path === '/')         document.getElementById('nav-analyze')?.classList.add('active');
+        if (path === '/history')  document.getElementById('nav-history')?.classList.add('active');
+    </script>
+</body>
+</html>

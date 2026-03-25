@@ -1,0 +1,55 @@
+# ⚡ Parallel Text Processor — Flask Web App
+
+A multi-threaded text sentiment analysis tool with a modern web UI.
+
+## Project Structure
+
+```
+text_processor/
+├── app.py              ← Flask routes & background processing pipeline
+├── database.py         ← SQLite3 persistence layer
+├── processor.py        ← Text chunking & sentiment analysis engine
+├── requirements.txt    ← Python dependencies
+├── templates/
+│   └── index.html      ← Single-page app HTML
+└── static/
+    ├── css/style.css   ← Dark theme stylesheet (Oxanium + DM Mono)
+    └── js/main.js      ← All frontend logic (tabs, charts, polling, API)
+```
+
+## Quick Start
+
+```bash
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Run the app
+python app.py
+
+# 3. Open your browser
+# → http://localhost:5000
+```
+
+## Features
+
+| Feature | Detail |
+|---|---|
+| **Multi-threading** | 2 / 4 / 8 / 16 worker threads via `ThreadPoolExecutor` |
+| **Chunking** | Sentence-level or paragraph-level splitting |
+| **Sentiment** | Rule-based positive / negative / neutral scoring |
+| **Database** | SQLite3 with batch tracking & indexed queries |
+| **Live progress** | Real-time log + progress bar via `/api/progress` polling |
+| **Search** | Keyword, score range & sentiment label filters |
+| **Charts** | 4 Chart.js visualisations (bar, doughnut, histogram, gauge) |
+| **Export** | Filtered CSV download with in-page preview |
+
+## API Endpoints
+
+| Method | URL | Description |
+|---|---|---|
+| `POST` | `/api/process` | Start processing job `{text, method, workers}` |
+| `POST` | `/api/stop` | Stop current job |
+| `GET` | `/api/progress` | Poll job state (running, done, total, log, pct) |
+| `GET` | `/api/results` | Fetch rows with optional filters |
+| `POST` | `/api/clear` | Delete all DB records |
+| `GET` | `/api/export` | Download CSV |

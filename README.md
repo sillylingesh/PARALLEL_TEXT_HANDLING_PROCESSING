@@ -134,52 +134,45 @@ Analyzer  Analyzer  Analyzer  Analyzer
 
 ---
 
-## ⚙️ How to Run
+---
 
-### Step 1️⃣ Place sample.txt
+## 🌐 Web Interface (Module 3)
 
-Example:
+The project now includes a modern web interface for processing text and visualizing sentiment results in real-time.
 
-```
-This is a good system.
-This is a bad error.
-The system is amazing.
-Is the system working?
-```
+### ⚙️ How to Setup & Run (New Users)
+
+If you have just cloned the repository, follow these steps to run the web interface:
+
+1. **Navigate to the web module**:
+   ```bash
+   cd module3
+   ```
+
+2. **Create a virtual environment**:
+   - **Mac/Linux**: `python3 -m venv venv`
+   - **Windows**: `python -m venv venv`
+
+3. **Activate the virtual environment**:
+   - **Mac/Linux**: `source venv/bin/activate`
+   - **Windows**: `venv\Scripts\activate`
+
+4. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+5. **Run the application**:
+   ```bash
+   python3 app.py
+   ```
+
+6. **Open in Browser**:
+   Visit **[http://127.0.0.1:5000](http://127.0.0.1:5000)** to view the application.
 
 ---
 
-### Step 2️⃣ Run Analysis
-
-```
-python add_data.py
-```
-
-Output:
-
-```
-New database sen.db created
-Processing 4 sentences
-Analysis completed
-```
-
----
-
-### Step 3️⃣ View Results
-
-```
-python view_data.py
-```
-
-Output:
-
-```
-ID | Sentiment | Score | Pattern | Tag | Sentence
-1  | POSITIVE  | 1     | NORMAL  | POSITIVE | This is a good system
-2  | NEGATIVE  | -2    | ALERT   | CRITICAL | This is a bad error
-```
-
----
+## 🧵 Parallel Processing Used
 
 ## 🧵 Parallel Processing Used
 
